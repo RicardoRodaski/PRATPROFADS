@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Sistema de Agendamento</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container py-4">
+  <h1>Sistema de Agendamento de Consultas</h1>
+
+  <form id="formAgendar" class="row g-2 mb-4">
+    <div class="col-md-3"><input id="paciente" class="form-control" placeholder="Paciente" required></div>
+    <div class="col-md-3"><input id="profissional" class="form-control" placeholder="Profissional" required></div>
+    <div class="col-md-3"><input id="data" type="date" class="form-control" required></div>
+    <div class="col-md-2"><input id="hora" type="time" class="form-control" required></div>
+    <div class="col-md-1 d-grid"><button class="btn btn-primary">Agendar</button></div>
+  </form>
+
+  <h4>Consultas</h4>
+  <ul id="listaConsultas" class="list-group"></ul>
+
+  <script>
+    const API = '/api/consultas';
+
+    async function carregar() {
+      const r = await fetch(API);
+      const lista = await r.json();
+      const el = document.getElementById('listaConsultas');
+      el.innerHTML = '';
+      lista.forEach(c => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        li.innerHTML = `
+          <span><b>${c.paciente}</b> - ${c.profissional} (${c.data} ${c.hora}) 
+          <span class="badge bg-${c.status === 'Cancelada' ? 'secondary' : 'success'}">${c.status}</span></span>
+          ${c.status !== 'Cancelada' ? `<button class="btn btn-danger btn-sm" onclick="cancelar(${c.id})">Cancelar</button>` : ''}
+        `;
+        el.appendChild(li);
+      });
+    }
+
+    async function cancelar(id) {
+      await fetch(`${API}/${id}/cancelar`, { method: 'PUT' });
+      carregar();
+    }
+
+    document.getElementById('formAgendar').addEventListener('submit', async e => {
+      e.preventDefault();
+      const data = {
+        paciente: paciente.value,
+        profissional: profissional.value,
+        data: document.getElementById('data').value,
+        hora: document.getElementById('hora').value
+      };
+      await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      e.target.reset();
+      carregar();
+    });
+
+    carregar();
+  </script>
+</body>
+</html>
